@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
-int toScore(char curr[5]);
-void readDart(int *address, int turn);
+typedef struct {
+    int value;
+    bool isDouble;
+} Dart;
+
+Dart toScore(char curr[20]);
+void readDart(int *vAddress, bool *dAddress, int turn);
 
 void clearScreen(void) {
     printf("\033[2J\033[H");
@@ -75,6 +81,9 @@ printf("|_______/ /__/     \\__\\ | _| `._____|   |__|     |______/   \\______/ 
 	printf("\t>> \"Outer Bull\"  ---> 25\n");
 	printf("\t>> \"Inner Bull\"  ---> 50\n");
 	printf("\t>> \"Missed Dart\" ---> 0\n\n");
+	printf("------------------------------------\n");
+
+	printf("You must finish on a double or Inner Bull\n");
 	printf("------------------------------------\n\n");
 
 	printf("Press ENTER to continue");
@@ -84,62 +93,93 @@ printf("|_______/ /__/     \\__\\ | _| `._____|   |__|     |______/   \\______/ 
 	while(1) {
 		
 		printf("------------------------------------\n");
-		printf("Now, %s's turn:\n\n", p1Name);
+		printf("Now, %s's turn:   (You require %d)\n", p1Name, p1Score);
 
-		int p1Darts[3];
+		bool gameOver = false;
+
+		int threeDarts[3];
+		bool isDouble = false;
+		int tempScore = p1Score;
+
 		for(int i = 0; i < 3; i++) {
-			readDart(&p1Darts[i], i + 1); 
-		}
+			readDart(&threeDarts[i], &isDouble, i + 1);
 
-		int p1Total = 0;
-		for(int i = 0; i < 3; i++) {
-			p1Total += p1Darts[i];
+			if(threeDarts[i] > tempScore) {
+				printf("%s busted their score! No points scored.\n", p1Name);
+				tempScore = p1Score;
+				break;
+			}
+			else if(threeDarts[i] == tempScore) {
+				
+				if(isDouble) {
+					printf("%s wins!\n", p1Name);
+					gameOver = true;
+					break;
+				}
+				else {
+					printf("%s busted their score! (must finish on a double) No points scored.\n", p1Name);
+					tempScore = p1Score;
+					break;
+				}
+			}
+			else {
+				tempScore -= threeDarts[i];
+			}
 		}
+		
+		if (gameOver) break;
+		printf("\nIn 3 darts, %s scored %d\n", p1Name, p1Score - tempScore);
+		printf("%s's score was %d, now it's %d\n", p1Name, p1Score, tempScore);
+		p1Score = tempScore;
 
-		if(p1Score - p1Total >= 0) {
-			p1Score -= p1Total;
-		}
-		else {
-			printf("%s busted their score! No points scored.\n", p1Name);
-		}
-
-		if(p1Score == 0) {
-			printf("%s wins!\n", p1Name);
-			break;
-		}
-		printf("\nTotal score in three darts was %d\n", p1Total);
-		printf("%s's score is now: %d\n\n", p1Name, p1Score);
 		
 
+
+
+		printf("------------------------------------\n");
+		printf("Now, %s's turn:   (You require %d)\n", p2Name, p2Score);
+
+		tempScore = p2Score;
+
+		for(int i = 0; i < 3; i++) {
+			readDart(&threeDarts[i], &isDouble, i + 1);
+
+			if(threeDarts[i] > tempScore) {
+				printf("%s busted their score! No points scored.\n", p2Name);
+				tempScore = p2Score;
+				break;
+			}
+			else if(threeDarts[i] == tempScore) {
+				
+				if(isDouble) {
+					printf("%s wins!\n", p2Name);
+					gameOver = true;
+					break;
+				}
+				else {
+					printf("%s busted their score! (must finish on a double) No points scored.\n", p2Name);
+					tempScore = p2Score;
+					break;
+				}
+			}
+			else {
+				tempScore -= threeDarts[i];
+			}
+		}
 		
-		printf("\n------------------------------------\n");
-		printf("Now, %s's turn:\n\n", p2Name);
+		if (gameOver) break;
+		printf("\nIn 3 darts, %s scored %d\n", p2Name, p2Score - tempScore);
+		printf("%s's score was %d, now it's %d\n", p2Name, p2Score, tempScore);
+		p2Score = tempScore;
 
-		int p2Darts[3];
-		for(int i = 0; i < 3; i++) {
-			readDart(&p2Darts[i], i + 1); 
-		}
 
-		int p2Total = 0;
-		for(int i = 0; i < 3; i++) {
-			p2Total += p2Darts[i];
-		}
+		printf("------------------------------------\n");
+		printf("CURRENT SCORE:");
+		printf("  > %s: %d\n", p1Name, p1Score);
+		printf("                > %s: %d\n\n", p2Name, p2Score);
 
-		if(p2Score - p2Total >= 0) {
-			p2Score -= p2Total;
-		}
-		else {
-			printf("%s busted their score! No points scored.\n", p2Name);
-		}
 
-		if(p2Score == 0) {
-			printf("%s wins!\n", p2Name);
-			break;
-		}
-		printf("\nTotal score in three darts was %d\n", p2Total);
-		printf("%s's score is now: %d\n", p2Name, p2Score);
-
-		printf("\n\nPress ENTER to continue");
+		printf("Press ENTER to continue");
 		while (getchar() != '\n');
 		clearScreen();
 	}
@@ -148,14 +188,15 @@ printf("|_______/ /__/     \\__\\ | _| `._____|   |__|     |______/   \\______/ 
 
 
 
-int toScore(char curr[5]) {
+Dart toScore(char curr[20]) {
 
 	int factor = 0;
+	Dart d = {0, false};
 
 	switch(curr[0]) {
 
 		case '0':
-			return 0;
+			return d;
 
 		case 'S':
 			factor = 1;
@@ -163,6 +204,7 @@ int toScore(char curr[5]) {
 
 		case 'D':
 			factor = 2;
+			d.isDouble = true;
 			break;
 
 		case 'T':
@@ -175,6 +217,7 @@ int toScore(char curr[5]) {
 
 		case 'd':
 			factor = 2;
+			d.isDouble = true;
 			break;
 
 		case 't':
@@ -182,17 +225,17 @@ int toScore(char curr[5]) {
 			break;
 
 		case '2':
-			if(curr[1] != '5') return -8;
-			if(curr[2] != '\n') return -9;
-			return 25;
+			if(curr[1] != '5') return (Dart){-8, false};
+			if(curr[2] != '\n') return (Dart){-9, false};
+			return (Dart){25, false};
 
 		case '5':
-			if(curr[1] != '0') return -10;
-			if(curr[2] != '\n') return -11;
-			return 50;
+			if(curr[1] != '0') return (Dart){-10, false};
+			if(curr[2] != '\n') return (Dart){-11, false};
+			return (Dart){50, true};
 
 		default:
-			return -1;
+			return (Dart){-1, false};
 	}
 
 
@@ -204,42 +247,44 @@ int toScore(char curr[5]) {
 	switch(strlen(curr)) {
 
 		case 4:
-			if(curr[4] != '\0') return -2;
-			if(curr[3] != '\n') return -3;
+			if(curr[4] != '\0') return (Dart){-2, false};
+			if(curr[3] != '\n') return (Dart){-3, false};
 			zone += curr[2] - 48;
 			zone += 10 * (curr[1] - 48);
 			break;
 		
 		case 3:
-			if(curr[3] != '\0') return -4;
-			if(curr[2] != '\n') return -5;
+			if(curr[3] != '\0') return (Dart){-4, false};
+			if(curr[2] != '\n') return (Dart){-5, false};
 			zone += curr[1] - 48;
 			break;
 
 		default:
-			return -6;
+			return (Dart){-6, false};
 	}
 
-	if(zone > 20) return -7;
+	if(zone > 20) return (Dart){-7, false};
 
-	return zone * factor;
+	d.value = zone * factor;
+	return d;
 }
 
 
 
 
-void readDart(int *address, int turn) {
+void readDart(int *vAddress, bool *dAddress, int turn) {
 	
-	char curr[5];
+	char curr[20];
 
 	while(1) {
 		printf("\nDart %d:\n>> ", turn);
 		fgets(curr, 5, stdin);
 
-		int value = toScore(curr);
-		if(value >= 0) {
-			printf("That dart scored: %d\n", value);
-			*address = value;
+		Dart d = toScore(curr);
+		if(d.value >= 0) {
+			printf("That dart scored: %d\n", d.value);
+			*vAddress = d.value;
+			*dAddress = d.isDouble;
 			break;
 		}
 		
